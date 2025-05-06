@@ -1,0 +1,96 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar" style="position: fixed; top: 0; left: 0; bottom: 0; width: 220px; padding: 2.5rem 1rem; overflow-y: auto; background-color: #36393f !important; color: white !important;">
+            <div class="sidebar-sticky">
+                <h3 align="center">Tags</h3>
+                <ul class="nav flex-column" style="background-color: #2f3136;">
+                    {% for tag in tags %}
+                    <li class="nav-item" style="color: white !important; background-color: #2f3136 !important; border: none !important;">
+                        <a class="nav-link" href="#" style="color: white !important; padding: 0.75rem;">
+                            @{{ tag.name }}
+                            <div style="display: inline; float: right;">
+                                <a href="/edit-tag/{{ tag.id }}" class="edit-button">Edit</a>
+                                <form method="POST" action="/delete-tag/{{ tag.id }}" style="display: inline;">
+                                    <button type="submit" class="delete-button">Delete</button>
+                                </form>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <br>
+                <h5 align="center">Add a Tag</h5>
+                <form method="POST" action="/create-tag">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="tag_name" name="tag_name" placeholder="Enter tag name" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Tag</button>
+                </form>
+                 <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                    <form method="GET" action="/logout">
+                        <button type="submit" class="btn btn-danger" style="width: 80%; background-color: #dc3545; border-color: #dc3545;">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4" style="margin-left: 220px;">
+            <h1 align="center" style="color: white;">Notes</h1>
+            <div style="padding: 20px;">
+                <div class="add-note-section">
+                    <h3 style="color: white;">Add a Note</h3>
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="note" style="color: white;">Note</label>
+                            <textarea name="note" id="note" class="form-control"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="tag_id" style="color: white;">Select Tag</label>
+                            <select class="form-control" id="tag_id" name="tag_id">
+                                {% for tag in tags %}
+                                <option value="{{ tag.id }}">{{ tag.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-plus-circle"></i> Add Note</button>
+                    </form>
+                </div>
+                <br>
+                {% for tag in tags %}
+                <div class="notes-section">
+                    <h3 align="center" style="color: white;">Notes for @{{ tag.name }}</h3>
+                    <ul class="list-group list-group-flush" id="notes">
+                        {% for note in notes %}
+                        {% if note.tag_id == tag.id %}
+                        <li class="list-group-item note-item" style="color: white; background-color: transparent; border-color: white;">
+                            {% if note.icon %}
+                            <i class="{{ note.icon }}"></i>
+                            {% endif %}
+                            {{ note.data }}
+                            <span class="sentiment">Sentiment: {{ note.sentiment }}</span>
+                            <div class="button-container">
+                                <button class="edit-btn" onclick="window.location.href='/edit-note/{{ note.id }}'"><i class="fas fa-edit"></i></button>
+                                <button class="close-btn" onClick="deleteNote('{{ note.id }}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                <br>
+                {% endfor %}
+                 <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                    <form method="GET" action="/logout">
+                        <button type="submit" class="btn btn-danger" style="width: 80%; background-color: #dc3545; border-color: #dc3545;"><i class="fa fa-door-closed"></i> Logout</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div style="position: absolute; top: 10px; right: 10px; color: white; font-size: 14px; text-align: right;">
+        <span id="greeting-message"></span>
+        <button onclick="fetchGreeting()" class="btn btn-sm btn-primary">Get Greeting</button>
+    </div>
+</div>
+{% endblock %}
