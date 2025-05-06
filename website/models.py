@@ -24,3 +24,4 @@ class Tag(db.Model):
     name = db.Column(db.String(150))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     notes = db.relationship('Note')
+    icon = db.Column(db.String(150), nullable=True, default='fas fa-tag')

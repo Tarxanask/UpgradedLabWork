@@ -68,7 +68,8 @@ icon_mapping = {
     'dreams': 'fas fa-moon',
     'pets': 'fas fa-paw',
     'shopping': 'fas fa-shopping-cart',
-    'weather': 'fas fa-cloud-sun'
+    'weather': 'fas fa-cloud-sun',
+    'default': 'fas fa-tag'  # Default icon for tags without a match
 }
 
 default_icon = 'fas fa-sticky-note'
@@ -97,46 +98,58 @@ def hello_notes():
 @views.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
+    api_error = False
     if request.method == 'POST':
-        note = request.form.get('note')  # Gets the note from the HTML
+        note = request.form.get('note')
         tag_id = request.form.get('tag_id')
 
         if len(note) < 1:
             flash('Note is too short!', category='error')
         else:
-            sentiment_score, keywords = analyze_note(note)
+            try:
+                sentiment_score, keywords = analyze_note(note)
+            except Exception as e:
+                sentiment_score = 0
+                keywords = []
+                api_error = True
 
-            new_note = Note(data=note, user_id=current_user.id, tag_id=tag_id, sentiment=sentiment_score)  # providing the schema for the note
-            db.session.add(new_note)  # adding the note to the database
+            new_note = Note(data=note, user_id=current_user.id, tag_id=tag_id, sentiment=sentiment_score)
+            db.session.add(new_note)
             db.session.commit()
             flash('Note added!', category='success')
 
     tags = Tag.query.filter_by(user_id=current_user.id).all()
     notes = Note.query.filter_by(user_id=current_user.id).all()
 
+    # Process existing notes
     for note in notes:
-        sentiment, keywords = analyze_note(note.data)
-        note.sentiment = sentiment
-        note.icon = default_icon
-        keyword_counts = {}
-        for keyword in keywords:
-            lemma = lemmatizer.lemmatize(keyword.lower())
-            if lemma in icon_mapping:
-                if lemma not in keyword_counts:
-                    keyword_counts[lemma] = 0
-                keyword_counts[lemma] += 1
+        try:
+            sentiment, keywords = analyze_note(note.data)
+            note.sentiment = sentiment
+            note.icon = default_icon
+            
+            keyword_counts = {}
+            for keyword in keywords:
+                lemma = lemmatizer.lemmatize(keyword.lower())
+                if lemma in icon_mapping:
+                    if lemma not in keyword_counts:
+                        keyword_counts[lemma] = 0
+                    keyword_counts[lemma] += 1
 
-        most_frequent_keyword = None
-        max_count = 0
-        for keyword, count in keyword_counts.items():
-            if count > max_count:
-                most_frequent_keyword = keyword
-                max_count = count
+            most_frequent_keyword = None
+            max_count = 0
+            for keyword, count in keyword_counts.items():
+                if count > max_count:
+                    most_frequent_keyword = keyword
+                    max_count = count
 
-        if most_frequent_keyword:
-            note.icon = icon_mapping[most_frequent_keyword]
+            if most_frequent_keyword:
+                note.icon = icon_mapping[most_frequent_keyword]
+        except Exception as e:
+            api_error = True
+            continue
 
-    return render_template("home.html", user=current_user, tags=tags, notes=notes)
+    return render_template("home.html", user=current_user, tags=tags, notes=notes, api_error=api_error)
 
 
 @views.route('/delete-note', methods=['POST'])
@@ -182,7 +195,9 @@ def create_tag():
     if len(name) < 1:
         flash('Tag name is too short!', category='error')
     else:
-        new_tag = Tag(name=name, user_id=current_user.id)
+        # Determine the icon for the tag
+        tag_icon = icon_mapping.get(name.lower(), icon_mapping['default'])
+        new_tag = Tag(name=name, user_id=current_user.id, icon=tag_icon)
         db.session.add(new_tag)
         db.session.commit()
         flash('Tag added!', category='success')
@@ -231,3 +246,37 @@ def edit_tag(tag_id):
             return redirect('/')
 
     return render_template("edit_tag.html", user=current_user, tag=tag)
+
+@views.route('/analyze-note', methods=['POST'])
+def analyze_note_fallback(note_text):
+    try:
+        # Try using Gemini API
+        genai.configure(api_key='AIzaSyCzO8JqOHfdcm8xcKecBA1NpIAj2FsA0V8')
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(f"Analyze the sentiment and extract keywords from this text: {note_text}")
+        
+        # Process response
+        if response and response.text:
+            return response.text, []
+        
+    except Exception as e:
+        # Fallback to basic analysis if API fails
+        words = note_text.lower().split()
+        sentiment = 0
+        
+        # Basic sentiment analysis
+        positive_words = {'good', 'great', 'awesome', 'excellent', 'happy', 'love'}
+        negative_words = {'bad', 'terrible', 'awful', 'sad', 'hate', 'poor'}
+        
+        for word in words:
+            if word in positive_words:
+                sentiment += 1
+            elif word in negative_words:
+                sentiment -= 1
+                
+        # Extract simple keywords
+        keywords = [word for word in words if len(word) > 4][:5]
+        
+        return sentiment, keywords
+
+    return 0, []  # Neutral sentiment if all else fails

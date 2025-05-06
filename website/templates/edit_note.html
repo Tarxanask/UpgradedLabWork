@@ -1,11 +1,163 @@
-{% extends "base.html" %} {% block title %}Edit Note{% endblock %} {% block content
-%}
-<h1 align="center" style="color: white;">Edit Note</h1>
-<form method="POST">
-  <textarea name="note" id="note" class="form-control">{{ note.data }}</textarea>
-  <br />
-  <div align="center">
-    <button type="submit" class="btn btn-primary">Update Note</button>
-  </div>
-</form>
+{% extends "base.html" %}
+{% block title %}Edit Note{% endblock %}
+{% block content %}
+<div class="container edit-container">
+    <div class="edit-card">
+        <h2 class="text-center mb-4"><i class="fas fa-edit"></i> Edit Note</h2>
+        <form method="POST" class="animated-form">
+            <div class="form-group">
+                <textarea name="note" id="note" class="form-control auto-expand" rows="4" required>{{ note.data }}</textarea>
+                <label for="note">Note Content</label>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{{ url_for('views.home') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.edit-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.edit-card {
+    background-color: var(--tag-bg-color);
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.edit-card:hover {
+    transform: translateY(-5px);
+}
+
+.animated-form {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.5s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn i {
+    font-size: 1rem;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+textarea.form-control {
+    min-height: 150px;
+    resize: vertical;
+    padding: 1rem;
+    line-height: 1.6;
+    background-color: var(--primary-color);
+    border: 1px solid var(--hover-color);
+    color: var(--text-color);
+}
+
+textarea.form-control:focus {
+    background-color: var(--primary-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 113, 255, 0.25);
+}
+
+label {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+textarea:focus + label,
+textarea:not(:placeholder-shown) + label {
+    transform: translateY(-2.5rem) scale(0.85);
+    color: var(--accent-color);
+}
+</style>
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.querySelector('textarea');
+    
+    // Auto-expand textarea
+    function autoExpand() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    }
+    
+    textarea.addEventListener('input', autoExpand);
+    
+    // Initial auto-expand
+    setTimeout(() => {
+        autoExpand.call(textarea);
+    }, 0);
+
+    // Form submission animation
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Saving...';
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}

@@ -1,48 +1,131 @@
-{% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
-content %}
-<form method="POST">
-  <h3 align="center" style="color: white;">Sign Up</h3>
-  <div class="form-group">
-    <label for="email" style="color: white;">Email Address</label>
-    <input
-      type="email"
-      class="form-control"
-      id="email"
-      name="email"
-      placeholder="Enter email"
-    />
-  </div>
-  <div class="form-group">
-    <label for="firstName" style="color: white;">First Name</label>
-    <input
-      type="text"
-      class="form-control"
-      id="firstName"
-      name="firstName"
-      placeholder="Enter first name"
-    />
-  </div>
-  <div class="form-group">
-    <label for="password1" style="color: white;">Password</label>
-    <input
-      type="password"
-      class="form-control"
-      id="password1"
-      name="password1"
-      placeholder="Enter password"
-    />
-  </div>
-  <div class="form-group">
-    <label for="password2" style="color: white;">Password (Confirm)</label>
-    <input
-      type="password"
-      class="form-control"
-      id="password2"
-      name="password2"
-      placeholder="Confirm password"
-    />
-  </div>
-  <br />
-  <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+{% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="text-center mb-4">Sign Up</h1>
+        <form method="POST">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required />
+            </div>
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" class="form-control" id="firstName" name="firstName" placeholder="Enter your first name" required />
+            </div>
+            <div class="form-group">
+                <label for="password1">Password</label>
+                <input type="password" class="form-control" id="password1" name="password1" placeholder="Create a password" required />
+            </div>
+            <div class="form-group">
+                <label for="password2">Confirm Password</label>
+                <input type="password" class="form-control" id="password2" name="password2" placeholder="Confirm your password" required />
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+            </div>
+            <div class="text-center mt-3">
+                <p class="text-muted">Already have an account? <a href="/login">Login</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    max-width: 400px;
+    margin: 4rem auto;
+    padding: 0 1rem;
+}
+
+.auth-card {
+    background-color: var(--tag-bg-color);
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: var(--text-color);
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-control {
+    background-color: var(--primary-color);
+    border: 1px solid var(--hover-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.form-control:focus {
+    background-color: var(--primary-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 113, 255, 0.25);
+    color: var(--text-color);
+    transform: none;
+}
+
+.form-control:focus + label,
+.form-control:focus::placeholder {
+    display: none;
+}
+
+/* Remove floating label behavior */
+.floating-label-wrapper label {
+    display: none;
+}
+
+/* Remove animations for focused inputs */
+.form-control:focus {
+    background-color: var(--primary-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 113, 255, 0.25);
+    color: var(--text-color);
+    transform: none;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    opacity: 1;
+}
+
+.btn {
+    padding: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+</style>
 {% endblock %}

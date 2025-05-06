@@ -1,13 +1,89 @@
 {% extends "base.html" %} {% block title %}Edit Tag{% endblock %} {% block content %}
-<h1 align="center" style="color: white;">Edit Tag</h1>
-<form method="POST">
-    <div class="form-group">
-        <label for="tag_name" style="color: white;">Tag Name</label>
-        <input type="text" class="form-control" id="tag_name" name="tag_name" value="{{ tag.name }}" />
+<div class="edit-tag-container">
+    <h1 class="text-center mb-4">Edit Tag</h1>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="form-group">
+                    <label for="tag_name">Tag Name</label>
+                    <input type="text" class="form-control" id="tag_name" name="tag_name" value="{{ tag.name }}" />
+                </div>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Update Tag</button>
+                    <a href="{{ url_for('views.home') }}" class="btn btn-secondary ml-2">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
-    <br />
-    <div align="center">
-        <button type="submit" class="btn btn-primary">Update Tag</button>
-    </div>
-</form>
+</div>
+
+<style>
+.edit-tag-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.card {
+    background-color: var(--tag-bg-color);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+h1 {
+    color: var(--text-color);
+}
+
+label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-control {
+    background-color: var(--primary-color);
+    border: 1px solid var(--hover-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background-color: var(--primary-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 113, 255, 0.25);
+    color: var(--text-color);
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: translateY(-1px);
+}
+</style>
 {% endblock %}
