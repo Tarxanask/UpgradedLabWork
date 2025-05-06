@@ -6,7 +6,13 @@ import json
 import google.generativeai as genai
 from nltk.stem import WordNetLemmatizer  # Add this import
 import nltk
-nltk.download('wordnet')  # Ensure the wordnet resource is downloaded
+try:
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    try:
+        nltk.download('wordnet', quiet=True)
+    except Exception:
+        pass  # Handle case where download fails in deployment
 
 genai.configure(api_key='AIzaSyCzO8JqOHfdcm8xcKecBA1NpIAj2FsA0V8')
 model = genai.GenerativeModel('gemini-1.5-flash')
