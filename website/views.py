@@ -257,7 +257,7 @@ def edit_tag(tag_id):
 def analyze_note_fallback(note_text):
     try:
         # Try using Gemini API
-        genai.configure(api_key='AIzaSyCzO8JqOHfdcm8xcKecBA1NpIAj2FsA0V8')
+        genai.configure(api_key='AIzaSyC8JXAZoHoRQzkPoGQxipzJaKd1XCi_A54')
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(f"Analyze the sentiment and extract keywords from this text: {note_text}")
         
