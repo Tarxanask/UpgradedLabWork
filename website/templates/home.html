@@ -110,8 +110,9 @@
                                     <i class="{{ tag.icon }}"></i> {{ tag.name }}
                                 </div>
                                 <div class="note-metadata">
-                                    <div class="sentiment-indicator {% if note.sentiment > 0 %}sentiment-positive{% elif note.sentiment < 0 %}sentiment-negative{% else %}sentiment-neutral{% endif %}">
-                                        <i class="fas {% if note.sentiment > 0 %}fa-smile{% elif note.sentiment < 0 %}fa-frown{% else %}fa-meh{% endif %}"></i>
+                                    <div class="sentiment-indicator {% if note.sentiment > 0.3 %}sentiment-positive{% elif note.sentiment < -0.3 %}sentiment-negative{% else %}sentiment-neutral{% endif %}" title="{% if note.sentiment > 0.3 %}Positive{% elif note.sentiment < -0.3 %}Negative{% else %}Neutral{% endif %}">
+                                        <i class="fas {% if note.sentiment > 0.3 %}fa-smile{% elif note.sentiment < -0.3 %}fa-frown{% else %}fa-meh{% endif %}"></i>
+                                        <span class="sentiment-label">{% if note.sentiment > 0.3 %}Positive{% elif note.sentiment < -0.3 %}Negative{% else %}Neutral{% endif %}</span>
                                     </div>
                                     <div class="note-actions">
                                         <button class="edit-btn" onclick="window.location.href='/edit-note/{{ note.id }}'" title="Edit Note">
@@ -245,5 +246,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .sidebar-overlay.show {
     display: block;
+}
+
+.sentiment-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.sentiment-positive {
+    color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.sentiment-negative {
+    color: #f44336;
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.sentiment-neutral {
+    color: #ff9800;
+    background-color: rgba(255, 152, 0, 0.1);
+}
+
+.sentiment-label {
+    font-weight: 500;
+    font-size: 0.8rem;
 }
 </style>

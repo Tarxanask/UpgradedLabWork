@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from os import path
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from dotenv import load_dotenv
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -12,6 +13,9 @@ DB_NAME = "database.db"
 
 
 def create_app():
+    # Ensure .env is loaded for all entrypoints
+    load_dotenv()
+
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'

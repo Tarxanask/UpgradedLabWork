@@ -1,5 +1,9 @@
 import os
+from dotenv import load_dotenv
 from website import create_app
+
+# Load environment variables when running via WSGI
+load_dotenv()
 
 app = create_app()
 

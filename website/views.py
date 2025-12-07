@@ -6,6 +6,8 @@ import json
 import google.generativeai as genai
 from nltk.stem import WordNetLemmatizer  # Add this import
 import nltk
+import os
+import re
 try:
     nltk.data.find('corpora/wordnet')
 except LookupError:
@@ -14,25 +16,77 @@ except LookupError:
     except Exception:
         pass  # Handle case where download fails in deployment
 
-genai.configure(api_key='AIzaSyCzO8JqOHfdcm8xcKecBA1NpIAj2FsA0V8')
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Use environment variable for API key security
+API_KEY = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY_HERE')
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-2.5-flash-lite')
+
+# Allow forcing offline sentiment for demos/recordings
+USE_BASIC_FALLBACK = os.getenv('USE_BASIC_SENTIMENT_FALLBACK') == '1'
 
 views = Blueprint('views', __name__)
 
+def _parse_sentiment(text: str) -> float:
+    """Extract the first float in the model response; raise if none found."""
+    match = re.search(r"-?\d+(?:\.\d+)?", text or "")
+    if not match:
+        raise ValueError(f"Could not parse sentiment from: {text}")
+    return float(match.group())
+
+
+def _basic_sentiment(text: str):
+    """Simple heuristic fallback: count positive/negative words."""
+    positive_words = {'good', 'great', 'awesome', 'excellent', 'happy', 'love', 'like', 'enjoy', 'nice', 'wonderful', 'amazing'}
+    negative_words = {'bad', 'terrible', 'awful', 'sad', 'hate', 'poor', 'worse', 'worst', 'angry', 'upset'}
+    words = re.findall(r"[a-zA-Z']+", text.lower())
+    score = 0
+    for w in words:
+        if w in positive_words:
+            score += 0.4
+        if w in negative_words:
+            score -= 0.4
+    # clamp between -1 and 1
+    score = max(-1.0, min(1.0, score))
+    # simple keywords: top unique words >3 chars
+    keywords = []
+    for w in words:
+        if len(w) > 3 and w not in keywords:
+            keywords.append(w)
+        if len(keywords) >= 5:
+            break
+    return score, keywords
+
+
 def analyze_note(text):
-    sentiment_prompt = f"Determine the sentiment of the following text. Return a single floating-point number between -1.0 and 1.0, where -1.0 is extremely negative, 0.0 is neutral, and 1.0 is extremely positive. Text: '{text}'"
+    # If demo/recording mode is on, skip API and use heuristic
+    if USE_BASIC_FALLBACK:
+        score, keywords = _basic_sentiment(text)
+        return score, keywords, None
+
+    sentiment_prompt = (
+        "Determine the sentiment of the following text. Return a single floating-point number between -1.0 and 1.0, "
+        "where -1.0 is extremely negative, 0.0 is neutral, and 1.0 is extremely positive. Text: '" + text + "'"
+    )
     keyword_prompt = f"Extract 3-5 keywords or topics from the following text: '{text}'. Return them as a comma-separated list."
+    if not API_KEY or API_KEY == 'YOUR_API_KEY_HERE':
+        raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
+
     try:
         sentiment_response = model.generate_content(sentiment_prompt)
-        sentiment_score = float(sentiment_response.text)
+        sentiment_score = _parse_sentiment(sentiment_response.text)
 
         keyword_response = model.generate_content(keyword_prompt)
-        keywords = [k.strip() for k in keyword_response.text.split(',')]
+        keywords = [k.strip() for k in keyword_response.text.split(',') if k.strip()]
 
-        return sentiment_score, keywords
+        return sentiment_score, keywords, None
     except Exception as e:
+        # If key is flagged or invalid, fallback to basic heuristic
+        err_text = str(e)
+        if 'reported as leaked' in err_text or 'API key not valid' in err_text or 'API_KEY_INVALID' in err_text:
+            score, keywords = _basic_sentiment(text)
+            return score, keywords, None
         print(f"Error analyzing note: {e}")
-        return 0.0, []
+        return 0.0, [], e
 
 icon_mapping = {
     'sports': 'fas fa-futbol',
@@ -75,6 +129,7 @@ icon_mapping = {
     'pets': 'fas fa-paw',
     'shopping': 'fas fa-shopping-cart',
     'weather': 'fas fa-cloud-sun',
+    'freelance': 'fas fa-briefcase',
     'default': 'fas fa-tag'  # Default icon for tags without a match
 }
 
@@ -106,54 +161,72 @@ def hello_notes():
 def home():
     api_error = False
     if request.method == 'POST':
-        note = request.form.get('note')
+        note = (request.form.get('note') or '').strip()
         tag_id = request.form.get('tag_id')
 
-        if len(note) < 1:
+        if not note:
             flash('Note is too short!', category='error')
+        elif not tag_id:
+            flash('Please select a tag for your note.', category='error')
         else:
             try:
-                sentiment_score, keywords = analyze_note(note)
+                sentiment_score, keywords, err = analyze_note(note)
+                if err:
+                    api_error = True
             except Exception as e:
                 sentiment_score = 0
                 keywords = []
                 api_error = True
 
+            # Classify sentiment
+            if sentiment_score > 0.3:
+                sentiment_label = "Positive 😊"
+            elif sentiment_score < -0.3:
+                sentiment_label = "Negative 😔"
+            else:
+                sentiment_label = "Neutral 😐"
+
             new_note = Note(data=note, user_id=current_user.id, tag_id=tag_id, sentiment=sentiment_score)
             db.session.add(new_note)
             db.session.commit()
-            flash('Note added!', category='success')
+            flash(f'Note added! Sentiment: {sentiment_label}', category='success')
 
     tags = Tag.query.filter_by(user_id=current_user.id).all()
     notes = Note.query.filter_by(user_id=current_user.id).all()
 
-    # Process existing notes
+    # Process existing notes - only analyze if they don't have sentiment yet
     for note in notes:
-        try:
-            sentiment, keywords = analyze_note(note.data)
-            note.sentiment = sentiment
-            note.icon = default_icon
-            
-            keyword_counts = {}
-            for keyword in keywords:
-                lemma = lemmatizer.lemmatize(keyword.lower())
-                if lemma in icon_mapping:
-                    if lemma not in keyword_counts:
-                        keyword_counts[lemma] = 0
-                    keyword_counts[lemma] += 1
+        note.icon = default_icon
+        
+        # Only analyze new notes (where sentiment is None)
+        if note.sentiment is None:
+            try:
+                sentiment, keywords, err = analyze_note(note.data)
+                if err:
+                    api_error = True
+                    continue
+                note.sentiment = sentiment
+                
+                keyword_counts = {}
+                for keyword in keywords:
+                    lemma = lemmatizer.lemmatize(keyword.lower())
+                    if lemma in icon_mapping:
+                        if lemma not in keyword_counts:
+                            keyword_counts[lemma] = 0
+                        keyword_counts[lemma] += 1
 
-            most_frequent_keyword = None
-            max_count = 0
-            for keyword, count in keyword_counts.items():
-                if count > max_count:
-                    most_frequent_keyword = keyword
-                    max_count = count
+                most_frequent_keyword = None
+                max_count = 0
+                for keyword, count in keyword_counts.items():
+                    if count > max_count:
+                        most_frequent_keyword = keyword
+                        max_count = count
 
-            if most_frequent_keyword:
-                note.icon = icon_mapping[most_frequent_keyword]
-        except Exception as e:
-            api_error = True
-            continue
+                if most_frequent_keyword:
+                    note.icon = icon_mapping[most_frequent_keyword]
+            except Exception as e:
+                api_error = True
+                continue
 
     return render_template("home.html", user=current_user, tags=tags, notes=notes, api_error=api_error)
 
@@ -257,8 +330,8 @@ def edit_tag(tag_id):
 def analyze_note_fallback(note_text):
     try:
         # Try using Gemini API
-        genai.configure(api_key='AIzaSyC8JXAZoHoRQzkPoGQxipzJaKd1XCi_A54')
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
         response = model.generate_content(f"Analyze the sentiment and extract keywords from this text: {note_text}")
         
         # Process response
@@ -286,3 +359,5 @@ def analyze_note_fallback(note_text):
         return sentiment, keywords
 
     return 0, []  # Neutral sentiment if all else fails
+
+
